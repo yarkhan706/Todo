@@ -1,19 +1,70 @@
-import { useEffect, useState } from "react";
-import { View, Text, Button, TextInput, StyleSheet } from "react-native";
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  Button,
+  TextInput,
+  StyleSheet,
+  FlatList,
+} from "react-native";
 import { FIREBASE_DB } from "../../fireBaseConfiguration";
-import { addDoc, collection } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  updateDoc,
+} from "firebase/firestore";
+
 const List = ({ navigation }) => {
   const [todos, setTodos] = useState([]);
   const [todo, setTodo] = useState("");
 
-  useEffect(() => {}, []);
+  useEffect(() => {
+    // Function to fetch todos from Firebase
+    const fetchTodos = async () => {
+      const querySnapshot = await getDocs(collection(FIREBASE_DB, "todos"));
+      const fetchedTodos = [];
+      querySnapshot.forEach((doc) => {
+        fetchedTodos.push({ id: doc.id, ...doc.data() });
+      });
+      setTodos(fetchedTodos);
+    };
+
+    // Fetch todos when component mounts
+    fetchTodos();
+  }, []);
 
   const addTodo = async () => {
-    const doc = await addDoc(collection(FIREBASE_DB, "todos"), {
-      title: todo,
-      done: false,
+    if (todo !== "") {
+      const docRef = await addDoc(collection(FIREBASE_DB, "todos"), {
+        title: todo,
+        done: false,
+      });
+      setTodo("");
+      fetchAndUpdateTodos();
+    }
+  };
+
+  const deleteTodo = async (id) => {
+    await deleteDoc(doc(FIREBASE_DB, "todos", id));
+    fetchAndUpdateTodos();
+  };
+
+  const updateTodo = async (id, updatedTodo) => {
+    await updateDoc(doc(FIREBASE_DB, "todos", id), updatedTodo);
+    // After updating, fetch and update the todos list
+    fetchAndUpdateTodos();
+  };
+
+  const fetchAndUpdateTodos = async () => {
+    const querySnapshot = await getDocs(collection(FIREBASE_DB, "todos"));
+    const fetchedTodos = [];
+    querySnapshot.forEach((doc) => {
+      fetchedTodos.push({ id: doc.id, ...doc.data() });
     });
-    setTodo('');
+    setTodos(fetchedTodos);
   };
 
   return (
@@ -25,12 +76,23 @@ const List = ({ navigation }) => {
           onChangeText={(text) => setTodo(text)}
           value={todo}
         />
-        <Button
-          onPress={() => addTodo()}
-          title="Add Todo"
-          disabled={todo === ""}
-        />
+        <Button onPress={addTodo} title="Add Todo" disabled={todo === ""} />
       </View>
+
+      <FlatList
+        data={todos}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.todoItem}>
+            <Text>{item.title}</Text>
+            <Button title="Delete" onPress={() => deleteTodo(item.id)} color={"red"} />
+            <Button
+              title="Mark Done"
+              onPress={() => updateTodo(item.id, { done: !item.done })}
+            />
+          </View>
+        )}
+      />
     </View>
   );
 };
@@ -44,14 +106,25 @@ const styles = StyleSheet.create({
   forum: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical:20,
+    marginVertical: 20,
   },
   input: {
     flex: 1,
     height: 40,
     borderWidth: 1,
     borderRadius: 4,
-    padding:10,
+    padding: 10,
     backgroundColor: "white",
+  },
+  todoItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginVertical: 8,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderRadius: 4,
+    borderColor: "#ccc",
+    padding: 8,
   },
 });
