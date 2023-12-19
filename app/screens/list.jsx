@@ -22,7 +22,6 @@ const List = ({ navigation }) => {
   const [todo, setTodo] = useState("");
 
   useEffect(() => {
-    // Function to fetch todos from Firebase
     const fetchTodos = async () => {
       const querySnapshot = await getDocs(collection(FIREBASE_DB, "todos"));
       const fetchedTodos = [];
@@ -32,7 +31,6 @@ const List = ({ navigation }) => {
       setTodos(fetchedTodos);
     };
 
-    // Fetch todos when component mounts
     fetchTodos();
   }, []);
 
@@ -54,7 +52,6 @@ const List = ({ navigation }) => {
 
   const updateTodo = async (id, updatedTodo) => {
     await updateDoc(doc(FIREBASE_DB, "todos", id), updatedTodo);
-    // After updating, fetch and update the todos list
     fetchAndUpdateTodos();
   };
 
